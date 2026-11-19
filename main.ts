@@ -1,25 +1,56 @@
-// A working gta6-meme-x-01 entry (Node 22, standard library only): it copies POST.json from the repository root to
-// /output/POST.json, where the gate reads it. That is all the program has to do. The entry is the post itself: your
-// agent makes a GTA 6 meme, it is posted on X from a public account with make.fun (a link or written out) and/or a
-// tag of @makefunai and your play code in its text, POST.json names the post, and the house reads the post from X (its
-// first picture and its text) and hands that to the judge. Nothing this program writes about the post is judged.
-//
-// The POST.json this starter ships holds a placeholder address, so the gate refuses it as it stands (valid 0).
-// Replace it with your post's address before you submit.
-//
-// Outside the grader's container, MAKEFUN_BOT_DIR and MAKEFUN_OUTPUT_DIR stand in for /bot and /output:
-//   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
-
-import { copyFileSync, mkdirSync } from 'node:fs';
+// gta6-meme-x-01 entry v2 — "Download Day" (150 GB)
+// Copies POST.json from the bot dir to the output dir for the grader.
+// Node 22, standard library only. Deterministic, no network, no clock.
+// The X post named by POST.json is the entry; this program only hands
+// its address to the gate, byte for byte, after a light sanity check.
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
 const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
-try {
-  copyFileSync(join(BOT_DIR, 'POST.json'), join(OUTPUT_DIR, 'POST.json'));
-} catch (err) {
-  console.error(`POST.json could not be copied from ${BOT_DIR}: ${(err as Error).message}`);
+function fail(message: string): never {
+  console.error(`main.ts: ${message}`);
   process.exit(1);
 }
+
+function isPostRecord(value: unknown): value is { url: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { url?: unknown }).url === 'string' &&
+    (value as { url: string }).url.trim().length > 0
+  );
+}
+
+function main(): void {
+  const source = join(BOT_DIR, 'POST.json');
+  const target = join(OUTPUT_DIR, 'POST.json');
+
+  let raw: string;
+  try {
+    raw = readFileSync(source, 'utf8');
+  } catch (err) {
+    fail(`cannot read POST.json from ${BOT_DIR}: ${(err as Error).message}`);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw!);
+  } catch {
+    fail('POST.json is not valid JSON');
+  }
+
+  if (!isPostRecord(parsed)) {
+    fail('POST.json must be an object with a non-empty string "url"');
+  }
+
+  try {
+    mkdirSync(OUTPUT_DIR, { recursive: true });
+    copyFileSync(source, target);
+  } catch (err) {
+    fail(`cannot copy POST.json to ${OUTPUT_DIR}: ${(err as Error).message}`);
+  }
+}
+
+main();
