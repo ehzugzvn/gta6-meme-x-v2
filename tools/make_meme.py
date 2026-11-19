@@ -162,21 +162,45 @@ def main():
     # ---- TV ----
     rounded(d, [292, 196, 1010, 586], 26, fill=(5, 5, 10), outline=BLACK, width=10)
     rounded(d, [312, 216, 990, 566], 16, fill=(11, 14, 38))
-    # vice sunset strip at top of screen
-    for i in range(54):
-        t = i / 54
-        col = (int(255 - 60 * t), int(90 + 90 * t), int(170 - 80 * t))
-        d.line([(316, 220 + i), (986, 220 + i)], fill=col)
-    d.rectangle([312, 274, 990, 278], fill=BLACK)
-    text_center(d, 651, 226, "VICE CITY  •  LEONIDA", font(30), fill=WHITE, stroke=2)
-    text_center(d, 651, 292, "GRAND THEFT AUTO VI", font(52), fill=WHITE, stroke=3)
-    text_center(d, 651, 356, "Downloading…  99%", font(40), fill=CYAN)
-    # progress bar at 99%
-    rounded(d, [352, 414, 950, 470], 14, fill=(30, 34, 60), outline=WHITE, width=5)
+    # Vice City sunset backdrop for the WHOLE download screen (Gemini note):
+    # pink -> orange -> deep purple gradient behind the UI itself, so the
+    # screen alone screams GTA 6 / Leonida, not a generic download.
+    sunset_top, sunset_mid, sunset_bot = (255, 62, 142), (255, 148, 64), (38, 16, 74)
+    for i in range(346):
+        y = 220 + i
+        t = i / 346
+        if t < 0.45:
+            u = t / 0.45
+            col = tuple(int(sunset_top[c] + (sunset_mid[c] - sunset_top[c]) * u) for c in range(3))
+        else:
+            u = (t - 0.45) / 0.55
+            col = tuple(int(sunset_mid[c] + (sunset_bot[c] - sunset_mid[c]) * u) for c in range(3))
+        d.line([(316, y), (986, y)], fill=col)
+    # low sun disc behind the title
+    d.ellipse([561, 232, 741, 412], fill=(255, 224, 138))
+    for sy in (322, 344, 366):  # retro sun slits
+        d.rectangle([561, sy, 741, sy + 7], fill=sunset_mid)
+    # palm silhouettes framing the screen (dark against the sunset)
+    for trunk, flip in ([(338, 566), (366, 420), (398, 330)], 1), ([(964, 566), (936, 420), (904, 330)], -1):
+        d.line(trunk, fill=(24, 8, 34), width=17)
+        px, py = trunk[-1]
+        for dx, dy in ((-86, -34), (-58, -62), (0, -74), (58, -62), (86, -34)):
+            d.line([(px, py), (px + dx * flip, py + dy + 30)], fill=(24, 8, 34), width=10, joint="curve")
+    # Leonida skyline silhouette along the screen bottom
+    sky = [(316, 566), (316, 512), (372, 512), (372, 488), (428, 488), (428, 522),
+           (492, 522), (492, 472), (548, 472), (548, 566)]
+    d.polygon(sky, fill=(24, 8, 34))
+    d.polygon([(x, y) for x, y in [(754, 566), (754, 500), (806, 500), (806, 478),
+                                   (868, 478), (868, 516), (930, 516), (930, 566)]], fill=(24, 8, 34))
+    text_center(d, 651, 226, "VICE CITY  •  LEONIDA", font(30), fill=WHITE, stroke=3)
+    text_center(d, 651, 288, "GRAND THEFT AUTO VI", font(54), fill=WHITE, stroke=5)
+    text_center(d, 651, 354, "Downloading…  99%", font(42), fill=WHITE, stroke=5)
+    # progress bar at 99% — dark track + white rim so magenta pops on sunset
+    rounded(d, [352, 412, 950, 472], 14, fill=(16, 10, 34), outline=WHITE, width=6)
     fill_w = int((950 - 352 - 16) * 0.99)
-    rounded(d, [360, 422, 360 + fill_w, 462], 10, fill=MAGENTA)
-    d.text((876, 424), "99%", font=font(30), fill=WHITE)
-    text_center(d, 651, 484, "Time remaining:  3 DAYS", font(46), fill=YELLOW, stroke=3)
+    rounded(d, [360, 420, 360 + fill_w, 464], 10, fill=MAGENTA)
+    d.text((868, 424), "99%", font=font(32), fill=WHITE, stroke_width=2, stroke_fill=BLACK)
+    text_center(d, 651, 482, "Time remaining:  3 DAYS", font(48), fill=YELLOW, stroke=5)
 
     # standing fan, left wall — head, blades, pole (visible, not behind TV)
     fx, fy = 128, 566
